@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,8 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
@@ -41,6 +43,7 @@ export function Header() {
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: User, requiresAuth: true },
+    // Admin link will be rendered conditionally below
   ];
 
   const handleSignOut = async () => {
@@ -78,20 +81,22 @@ export function Header() {
                 </Link>
               );
             })}
+            {user?.role === "admin" && (
+              <Link
+                href="/admin"
+                className="flex items-center space-x-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              >
+                <Settings className="w-4 h-4" />
+                <span>Admin</span>
+              </Link>
+            )}
           </nav>
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <>
-                {user.role === "admin" && (
-                  <Button asChild size="sm">
-                    <Link href="/events/create">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Event
-                    </Link>
-                  </Button>
-                )}
+                {/* Create Event button shown only in Admin dashboard, not header to avoid duplication */}
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -131,12 +136,14 @@ export function Header() {
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={toggleTheme}>
-                      {theme === "dark" ? (
+                      {mounted && theme === "dark" ? (
                         <Sun className="w-4 h-4 mr-2" />
-                      ) : (
+                      ) : mounted ? (
                         <Moon className="w-4 h-4 mr-2" />
+                      ) : (
+                        <Sun className="w-4 h-4 mr-2" />
                       )}
-                      {theme === "dark" ? "Light mode" : "Dark mode"}
+                      {mounted ? (theme === "dark" ? "Light mode" : "Dark mode") : "Toggle theme"}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
@@ -149,7 +156,7 @@ export function Header() {
             ) : (
               <>
                 <Button variant="ghost" size="sm" onClick={toggleTheme}>
-                  {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                  {mounted && theme === "dark" ? <Sun className="w-4 h-4" /> : mounted ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
                 </Button>
                 <Button variant="ghost" size="sm" asChild>
                   <Link href="/auth">Sign In</Link>
@@ -194,16 +201,7 @@ export function Header() {
               
               {user ? (
                 <>
-                  {user.role === "admin" && (
-                    <Link
-                      href="/events/create"
-                      className="flex items-center space-x-2 text-sm font-medium text-primary"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Create Event</span>
-                    </Link>
-                  )}
+                  {/* Create Event link removed from mobile header to avoid duplication */}
                   <button
                     onClick={toggleTheme}
                     className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
@@ -225,8 +223,8 @@ export function Header() {
                     onClick={toggleTheme}
                     className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                    <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
+                    {mounted && theme === "dark" ? <Sun className="w-4 h-4" /> : mounted ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                    <span>{mounted ? (theme === "dark" ? "Light mode" : "Dark mode") : "Toggle theme"}</span>
                   </button>
                   <Link
                     href="/auth"

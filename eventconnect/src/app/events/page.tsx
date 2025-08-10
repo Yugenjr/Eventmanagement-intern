@@ -102,7 +102,9 @@ export default function EventsPage() {
   useEffect(() => {
     if (!user) {
       window.location.href = "/auth";
+      return;
     }
+    // Gate non-admin users to this page only after sign-in; page stays same otherwise
   }, [user]);
 
   const filteredEvents = events.filter(event => {

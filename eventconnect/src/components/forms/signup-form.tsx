@@ -28,6 +28,32 @@ interface SignupFormProps {
   onSwitchToLogin: () => void;
 }
 
+function RoleToggle({ registerRole }: { registerRole: any }) {
+  const [role, setRole] = useState<"user" | "admin">("user");
+  return (
+    <>
+      <input type="radio" value="user" {...registerRole} checked={role === 'user'} onChange={() => setRole('user')} className="hidden" />
+      <input type="radio" value="admin" {...registerRole} checked={role === 'admin'} onChange={() => setRole('admin')} className="hidden" />
+      <Button
+        type="button"
+        variant="outline"
+        className={`h-10 border-2 ${role === 'user' ? 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-300/60 dark:ring-blue-400/50' : 'border-white/20 text-white/80 hover:bg-white/40 dark:hover:bg-white/10'}`}
+        onClick={() => setRole('user')}
+      >
+        User
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        className={`h-10 border-2 ${role === 'admin' ? 'bg-purple-600 text-white border-purple-600 ring-2 ring-purple-300/60 dark:ring-purple-400/50' : 'border-white/20 text-white/80 hover:bg-white/40 dark:hover:bg-white/10'}`}
+        onClick={() => setRole('admin')}
+      >
+        Admin
+      </Button>
+    </>
+  );
+}
+
 export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -53,10 +79,10 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignInAs = async (role: "user" | "admin") => {
     try {
       setIsLoading(true);
-      await signInWithGoogle();
+      await signInWithGoogle(role);
     } catch (error) {
       // Error is handled in the auth context
     } finally {
@@ -65,79 +91,75 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto glass hover-lift">
-      <CardHeader className="space-y-1 text-center">
-        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-secondary rounded-full flex items-center justify-center">
-          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-          </svg>
-        </div>
-        <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+    <Card className="w-full bg-white/95 dark:bg-gray-900/70 border border-white/10 shadow-2xl backdrop-blur-md">
+      <CardHeader className="space-y-1 text-center pb-6">
+        <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white font-display">
           Create account
         </CardTitle>
-        <CardDescription className="text-center">
+        <CardDescription className="text-gray-600 dark:text-gray-300">
           Join our community and start creating amazing events
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <Button
-          variant="outline"
-          className="w-full hover-lift relative overflow-hidden group"
-          onClick={handleGoogleSignIn}
-          disabled={isLoading}
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-red-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
-          <FcGoogle className="mr-2 h-5 w-5" />
-          Continue with Google
-        </Button>
-        
+      <CardContent className="space-y-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Button
+            variant="outline"
+            className="w-full h-11 text-base border-2 border-white/20 hover:bg-white/40 dark:hover:bg-white/10"
+            onClick={() => handleGoogleSignInAs("user")}
+            disabled={isLoading}
+          >
+            <FcGoogle className="mr-3 h-5 w-5" />
+            Sign up as User
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full h-11 text-base border-2 border-white/20 hover:bg-white/40 dark:hover:bg-white/10"
+            onClick={() => handleGoogleSignInAs("admin")}
+            disabled={isLoading}
+          >
+            <FcGoogle className="mr-3 h-5 w-5" />
+            Sign up as Admin
+          </Button>
+        </div>
+
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
+            <span className="w-full border-t border-white/20" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+            <span className="bg-transparent px-2 text-white/70">Or continue with email</span>
           </div>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="space-y-4">
             <div className="relative">
-              <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <User className="absolute left-3 top-3 h-4 w-4 text-white/60" />
               <Input
                 {...register("displayName")}
                 type="text"
                 placeholder="Enter your full name"
-                className="pl-10"
+                className="pl-10 bg-white/70 dark:bg-white/5 border-white/20 text-gray-900 dark:text-white placeholder:text-gray-500"
                 error={errors.displayName?.message}
               />
             </div>
+
             <div className="space-y-2">
-              <label className="text-sm font-medium">Role</label>
-              <div className="flex gap-3">
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="radio" value="user" defaultChecked {...register("role")} />
-                  User
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="radio" value="admin" {...register("role")} />
-                  Admin
-                </label>
+              <label className="text-sm font-medium text-white/80">Role</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <RoleToggle registerRole={register("role")} />
               </div>
-              {errors as any && (errors as any).role && (
-                <p className="text-sm text-destructive">{(errors as any).role?.message as any}</p>
-              )}
             </div>
           </div>
 
           <div className="space-y-2">
             <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Mail className="absolute left-3 top-3 h-4 w-4 text-white/60" />
               <Input
                 {...register("email")}
                 type="email"
                 placeholder="Enter your email"
-                className="pl-10"
+                className="pl-10 bg-white/70 dark:bg-white/5 border-white/20 text-gray-900 dark:text-white placeholder:text-gray-500"
                 error={errors.email?.message}
               />
             </div>
@@ -145,12 +167,12 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
 
           <div className="space-y-2">
             <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-white/60" />
               <Input
                 {...register("password")}
                 type={showPassword ? "text" : "password"}
                 placeholder="Create a password"
-                className="pl-10 pr-10"
+                className="pl-10 pr-10 bg-white/70 dark:bg-white/5 border-white/20 text-gray-900 dark:text-white placeholder:text-gray-500"
                 error={errors.password?.message}
               />
               <button
@@ -165,12 +187,12 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
 
           <div className="space-y-2">
             <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-white/60" />
               <Input
                 {...register("confirmPassword")}
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="Confirm your password"
-                className="pl-10 pr-10"
+                className="pl-10 pr-10 bg-white/70 dark:bg-white/5 border-white/20 text-gray-900 dark:text-white placeholder:text-gray-500"
                 error={errors.confirmPassword?.message}
               />
               <button

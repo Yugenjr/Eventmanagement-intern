@@ -167,7 +167,7 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
             {/* Banner Upload */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Event Banner (Optional)</label>
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
+              <div className="relative border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
                 {bannerPreview ? (
                   <div className="relative">
                     <img
@@ -203,7 +203,7 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
                   type="file"
                   accept="image/*"
                   onChange={handleBannerChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 />
               </div>
             </div>

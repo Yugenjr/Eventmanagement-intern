@@ -11,9 +11,10 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
-import { auth, googleProvider, db } from "@/lib/firebase";
+import { auth, googleProvider, db, rtdb } from "@/lib/firebase";
 import { User, AuthContextType, Role } from "@/types";
 import toast from "react-hot-toast";
+import { ref as dbRef, push as dbPush, set as dbSet } from "firebase/database";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -36,20 +37,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Get additional user data from Firestore
-        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-        const userData = userDoc.data();
-        
-        const user: User = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email!,
-          displayName: firebaseUser.displayName || userData?.displayName || "",
-          role: (userData?.role as Role) || "user",
-          photoURL: firebaseUser.photoURL || userData?.photoURL,
-          createdAt: userData?.createdAt || serverTimestamp(),
-        };
+        try {
+          // Get additional user data from Firestore
+          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+          const userData = userDoc.data();
 
-        setUser(user);
+          const user: User = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email!,
+            displayName: firebaseUser.displayName || userData?.displayName || "",
+            role: (userData?.role as Role) || "user",
+            photoURL: firebaseUser.photoURL || userData?.photoURL,
+            createdAt: userData?.createdAt || serverTimestamp(),
+          };
+
+          setUser(user);
+        } catch (err) {
+          // Offline or Firestore unavailable: fall back to auth user only
+          let desiredRole: Role | undefined = undefined;
+          try {
+            if (typeof window !== "undefined") {
+              const stored = window.localStorage.getItem("lastDesiredRole");
+              if (stored === "admin" || stored === "user") desiredRole = stored as Role;
+            }
+          } catch {}
+          setUser((prev) => {
+            const fallbackUser: User = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || "",
+              displayName: firebaseUser.displayName || prev?.displayName || "",
+              role: desiredRole ?? prev?.role ?? "user",
+              photoURL: firebaseUser.photoURL || prev?.photoURL || undefined,
+              createdAt: serverTimestamp(),
+            };
+            return fallbackUser;
+          });
+        }
       } else {
         setUser(null);
       }
@@ -59,10 +82,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return unsubscribe;
   }, []);
 
+  const logLoginActivity = async (firebaseUser: FirebaseUser) => {
+    try {
+      const activityRef = dbRef(rtdb, "recentLogins");
+      const itemRef = dbPush(activityRef);
+      await dbSet(itemRef, {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName || "",
+        when: new Date().toISOString(),
+      });
+    } catch (e) {
+      // Silent fail; do not bother user
+    }
+  };
+
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      await signInWithEmailAndPassword(auth, email, password);
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      await logLoginActivity(cred.user);
       toast.success("Welcome back!");
     } catch (error: any) {
       console.error("Sign-in error:", error);
@@ -75,7 +114,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } else if (error.code === 'auth/too-many-requests') {
         toast.error("Too many failed attempts. Please try again later.");
       } else {
-        toast.error("Failed to sign in. Please check your credentials.");
+        toast.error("We couldn't sign you in. Please try again.");
       }
       throw error;
     } finally {
@@ -87,24 +126,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setLoading(true);
       const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Update the user's display name
-      await updateProfile(firebaseUser, { displayName });
-      
-      // Create user document in Firestore
-      const userData = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        displayName,
-        role,
-        photoURL: firebaseUser.photoURL,
-        createdAt: serverTimestamp(),
-      };
 
-      await setDoc(doc(db, "users", firebaseUser.uid), userData);
+      // Update the user's display name (best-effort)
+      try { await updateProfile(firebaseUser, { displayName }); } catch {}
+
+      // Create user document in Firestore
+      try {
+        const userData = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName,
+          role,
+          photoURL: firebaseUser.photoURL,
+          createdAt: serverTimestamp(),
+        };
+        await setDoc(doc(db, "users", firebaseUser.uid), userData);
+      } catch (dbErr) {
+        console.warn("User created but Firestore write failed (offline?):", dbErr);
+      }
+      await logLoginActivity(firebaseUser);
       toast.success("Account created successfully!");
     } catch (error: any) {
-      toast.error(error.message || "Failed to create account");
+      toast.error("We couldn't create your account. Please try again.");
       throw error;
     } finally {
       setLoading(false);
@@ -120,12 +163,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
         prompt: 'select_account'
       });
 
+      try {
+        if (typeof window !== "undefined" && desiredRole) {
+          window.localStorage.setItem("lastDesiredRole", desiredRole);
+        }
+      } catch {}
+
       const { user: firebaseUser } = await signInWithPopup(auth, googleProvider);
 
-      // Check if user document exists, if not create it
+      // Ensure user document exists and immediately reflects the selected role
       try {
-        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-        if (!userDoc.exists()) {
+        const userRef = doc(db, "users", firebaseUser.uid);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) {
           const userData = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
@@ -134,13 +184,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
             photoURL: firebaseUser.photoURL,
             createdAt: serverTimestamp(),
           };
-
-          await setDoc(doc(db, "users", firebaseUser.uid), userData);
+          await setDoc(userRef, userData);
+        } else if (desiredRole && userSnap.data()?.role !== desiredRole) {
+          // Merge the chosen role so Admin/User selection takes effect immediately
+          await setDoc(userRef, { role: desiredRole }, { merge: true });
         }
       } catch (dbError) {
         console.log("Database operation failed, but auth succeeded:", dbError);
         // Continue anyway since auth was successful
       }
+
+      // Reflect the chosen role immediately in local state
+      try {
+        const userRef = doc(db, "users", firebaseUser.uid);
+        const updatedSnap = await getDoc(userRef);
+        const updatedRole = (updatedSnap.data()?.role as Role) || desiredRole || "user";
+        setUser((prev) => {
+          if (!prev) return prev;
+          if (prev.uid !== firebaseUser.uid) return prev;
+          return { ...prev, role: updatedRole } as User;
+        });
+      } catch {}
 
       toast.success("Welcome to EventConnect!");
     } catch (error: any) {
@@ -163,7 +227,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await firebaseSignOut(auth);
       toast.success("Signed out successfully");
     } catch (error: any) {
-      toast.error(error.message || "Failed to sign out");
+      toast.error("We couldn't sign you out. Please try again.");
       throw error;
     }
   };

@@ -24,7 +24,7 @@ export default function Home() {
             <div className="space-y-6">
               <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium">
                 <Sparkles className="w-4 h-4 mr-2" />
-                Powered by Firebase & Next.js
+                Powered by Innovaid
               </div>
 
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold font-display text-gray-900 dark:text-white leading-tight">
@@ -211,7 +211,7 @@ export default function Home() {
 
             <div className="flex flex-wrap justify-center gap-3 mb-8">
               <Badge variant="secondary" className="bg-gray-800 text-gray-300 border-gray-700">Next.js 15</Badge>
-              <Badge variant="secondary" className="bg-gray-800 text-gray-300 border-gray-700">Firebase</Badge>
+              <Badge variant="secondary" className="bg-gray-800 text-gray-300 border-gray-700">Innovaid</Badge>
               <Badge variant="secondary" className="bg-gray-800 text-gray-300 border-gray-700">Tailwind CSS</Badge>
               <Badge variant="secondary" className="bg-gray-800 text-gray-300 border-gray-700">TypeScript</Badge>
             </div>

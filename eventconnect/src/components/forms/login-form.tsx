@@ -26,6 +26,7 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, signInWithGoogle } = useAuth();
+  const [selectedRole, setSelectedRole] = useState<"user" | "admin">("user");
 
   const {
     register,
@@ -58,24 +59,39 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-3">
+          <div className="flex items-center justify-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className={
+                `h-9 px-4 text-sm border-2 ${selectedRole === 'user' ? 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-300/60 dark:ring-blue-400/50' : 'border-white/20 text-white/80 hover:bg-white/40 dark:hover:bg-white/10'}`
+              }
+              onClick={() => setSelectedRole('user')}
+              disabled={isLoading}
+            >
+              User
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className={
+                `h-9 px-4 text-sm border-2 ${selectedRole === 'admin' ? 'bg-purple-600 text-white border-purple-600 ring-2 ring-purple-300/60 dark:ring-purple-400/50' : 'border-white/20 text-white/80 hover:bg-white/40 dark:hover:bg-white/10'}`
+              }
+              onClick={() => setSelectedRole('admin')}
+              disabled={isLoading}
+            >
+              Admin
+            </Button>
+          </div>
           <Button
             variant="outline"
             className="w-full h-11 text-base border-2 border-white/20 hover:bg-white/40 dark:hover:bg-white/10"
-            onClick={() => signInWithGoogle("user")}
+            onClick={() => signInWithGoogle(selectedRole)}
             disabled={isLoading}
           >
             <FcGoogle className="mr-3 h-5 w-5" />
-            Continue as User
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full h-11 text-base border-2 border-white/20 hover:bg-white/40 dark:hover:bg-white/10"
-            onClick={() => signInWithGoogle("admin")}
-            disabled={isLoading}
-          >
-            <FcGoogle className="mr-3 h-5 w-5" />
-            Continue as Admin
+            Continue with Google
           </Button>
         </div>
 

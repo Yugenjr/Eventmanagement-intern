@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { EventCard } from "@/components/events/event-card";
 import { useAuth } from "@/contexts/auth-context";
 import { Event } from "@/types";
+import { getEvents } from "@/lib/events";
+import { isUserRegistered, registerForEvent, unregisterFromEvent } from "@/lib/registrations";
 import {
   Calendar,
   Users,
@@ -21,71 +23,29 @@ import {
   Trash2,
 } from "lucide-react";
 
-// Mock data
-const mockUserEvents: Event[] = [
-  {
-    id: "1",
-    title: "Tech Conference 2024",
-    description: "Join industry leaders for the latest in technology trends and innovations.",
-    date: { toDate: () => new Date("2024-03-15T10:00:00") } as any,
-    location: "San Francisco, CA",
-    category: "technology",
-    bannerUrl: "",
-    createdBy: "current-user",
-    createdAt: { toDate: () => new Date() } as any,
-    updatedAt: { toDate: () => new Date() } as any,
-    registrationCount: 250,
-    maxAttendees: 500,
-    isPublic: true,
-    tags: ["AI", "Blockchain", "Cloud"],
-  },
-  {
-    id: "2",
-    title: "Design Workshop",
-    description: "Learn modern design principles and hands-on techniques from experts.",
-    date: { toDate: () => new Date("2024-03-20T14:00:00") } as any,
-    location: "New York, NY",
-    category: "education",
-    bannerUrl: "",
-    createdBy: "current-user",
-    createdAt: { toDate: () => new Date() } as any,
-    updatedAt: { toDate: () => new Date() } as any,
-    registrationCount: 50,
-    maxAttendees: 100,
-    isPublic: true,
-    tags: ["Design", "UI/UX", "Workshop"],
-  },
-];
+// Remove mock data; will fetch real data
+const mockUserEvents: Event[] = [] as any;
 
-const mockRegisteredEvents: Event[] = [
-  {
-    id: "3",
-    title: "Startup Networking",
-    description: "Connect with entrepreneurs, investors, and fellow startup enthusiasts.",
-    date: { toDate: () => new Date("2024-03-25T18:00:00") } as any,
-    location: "Austin, TX",
-    category: "business",
-    bannerUrl: "",
-    createdBy: "other-user",
-    createdAt: { toDate: () => new Date() } as any,
-    updatedAt: { toDate: () => new Date() } as any,
-    registrationCount: 120,
-    maxAttendees: 200,
-    isPublic: true,
-    tags: ["Networking", "Startup", "Business"],
-  },
-];
+const mockRegisteredEvents: Event[] = [] as any;
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [userEvents, setUserEvents] = useState<Event[]>(mockUserEvents);
-  const [registeredEvents, setRegisteredEvents] = useState<Event[]>(mockRegisteredEvents);
-  const [activeTab, setActiveTab] = useState<"created" | "registered">("created");
+  const [userEvents, setUserEvents] = useState<Event[]>([]);
+  const [registeredEvents, setRegisteredEvents] = useState<Event[]>([]);
+  const [discover, setDiscover] = useState<Event[]>([]);
+  const [activeTab, setActiveTab] = useState<"created" | "registered" | "discover">("created");
 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/auth");
+    }
+    if (!loading && user) {
+      // Fetch discover list and user's created/registered events
+      (async () => {
+        const res = await getEvents({}, { field: "createdAt", direction: "desc" }, { page: 1, limit: 12 });
+        setDiscover(res.events);
+      })();
     }
   }, [user, loading, router]);
 
@@ -201,9 +161,26 @@ export default function DashboardPage() {
         >
           Registered Events ({registeredEvents.length})
         </Button>
+        <Button
+          variant={activeTab === "discover" ? "default" : "ghost"}
+          onClick={() => setActiveTab("discover")}
+        >
+          Discover
+        </Button>
       </div>
 
       {/* Content */}
+      {activeTab === "discover" && (
+        <div>
+          <h2 className="text-2xl font-semibold mb-6">Discover Events</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {discover.map((ev) => (
+              <EventCard key={ev.id} event={ev} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {activeTab === "created" && (
         <div className="space-y-8">
           {/* Upcoming Events */}

@@ -15,7 +15,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "EventConnect - Modern Event Management",
   description: "Create, discover, and manage events with real-time updates and seamless user experience.",
-  keywords: ["events", "management", "real-time", "firebase", "nextjs"],
+  keywords: ["events", "management", "real-time", "innovaid", "nextjs"],
   authors: [{ name: "EventConnect Team" }],
   creator: "EventConnect",
   openGraph: {
