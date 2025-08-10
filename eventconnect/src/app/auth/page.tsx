@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { LoginForm } from "@/components/forms/login-form";
 import { SignupForm } from "@/components/forms/signup-form";
 import { useAuth } from "@/contexts/auth-context";
-import { AuthTest } from "@/components/auth-test";
-import { Calendar, Users } from "lucide-react";
+import { Calendar } from "lucide-react";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -24,57 +23,33 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-600 relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/20" />
-        <div className="absolute inset-0" style={{
-          backgroundImage: `radial-gradient(circle at 25px 25px, rgba(255, 255, 255, 0.1) 2px, transparent 0)`,
-          backgroundSize: '50px 50px'
-        }} />
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800">
+      {/* subtle dotted pattern */}
+      <div
+        className="absolute inset-0 opacity-20"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 25px 25px, rgba(255,255,255,0.15) 2px, transparent 0)",
+          backgroundSize: "50px 50px",
+        }}
+      />
+      {/* glow blobs */}
+      <div className="pointer-events-none absolute -top-24 -left-24 h-96 w-96 rounded-full bg-indigo-500/30 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-fuchsia-500/20 blur-3xl" />
 
-        <div className="relative z-10 flex flex-col justify-center items-center text-center text-white p-12">
-          <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mb-8 backdrop-blur-sm">
-            <Calendar className="w-10 h-10 text-white" />
+      <div className="relative z-10 flex min-h-screen items-center justify-center p-6">
+        <div className="w-full max-w-md">
+          {/* Brand */}
+          <div className="mb-6 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 backdrop-blur">
+              <Calendar className="h-8 w-8 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold tracking-tight text-white">EventConnect</h1>
+            <p className="mt-2 text-sm text-white/70">Create, discover and manage events effortlessly</p>
           </div>
 
-          <h1 className="text-5xl font-bold font-display mb-6">
-            EventConnect
-          </h1>
-
-          <p className="text-xl text-white/90 max-w-md leading-relaxed mb-8">
-            Create, discover, and manage amazing events with our modern platform
-          </p>
-
-          <div className="flex items-center space-x-6 text-white/80">
-            <div className="flex items-center space-x-2">
-              <Users className="w-5 h-5" />
-              <span>10K+ Users</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Calendar className="w-5 h-5" />
-              <span>5K+ Events</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Side - Auth Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-gray-50 dark:bg-gray-900">
-        <div className="w-full max-w-2xl">
-          <div className="text-center mb-8 lg:hidden">
-            <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Calendar className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-3xl font-bold font-display text-gray-900 dark:text-white">
-              EventConnect
-            </h1>
-          </div>
-
-          {/* Firebase Auth Test */}
-          <AuthTest />
-
-          <div className="max-w-md mx-auto mt-8">
+          {/* Auth */}
+          <div>
             {isLogin ? (
               <LoginForm onSwitchToSignup={() => setIsLogin(false)} />
             ) : (

@@ -58,44 +58,44 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
   };
 
   return (
-    <Card className="w-full bg-white dark:bg-gray-800 shadow-xl border-0">
-      <CardHeader className="space-y-1 text-center pb-8">
-        <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white font-display">
+    <Card className="w-full bg-white/95 dark:bg-gray-900/70 border border-white/10 shadow-2xl backdrop-blur-md">
+      <CardHeader className="space-y-1 text-center pb-6">
+        <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white font-display">
           Welcome back
         </CardTitle>
-        <CardDescription className="text-gray-600 dark:text-gray-300 text-lg">
+        <CardDescription className="text-gray-600 dark:text-gray-300">
           Sign in to your account to continue
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-5">
         <Button
           variant="outline"
-          className="w-full h-12 text-base border-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
+          className="w-full h-11 text-base border-2 border-white/20 hover:bg-white/40 dark:hover:bg-white/10"
           onClick={handleGoogleSignIn}
           disabled={isLoading}
         >
           <FcGoogle className="mr-3 h-5 w-5" />
           Continue with Google
         </Button>
-        
+
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
+            <span className="w-full border-t border-white/20" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+            <span className="bg-transparent px-2 text-white/70">Or continue with</span>
           </div>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Mail className="absolute left-3 top-3 h-4 w-4 text-white/60" />
               <Input
                 {...register("email")}
                 type="email"
                 placeholder="Enter your email"
-                className="pl-10"
+                className="pl-10 bg-white/70 dark:bg-white/5 border-white/20 text-gray-900 dark:text-white placeholder:text-gray-500"
                 error={errors.email?.message}
               />
             </div>
@@ -103,34 +103,34 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
 
           <div className="space-y-2">
             <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-white/60" />
               <Input
                 {...register("password")}
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
-                className="pl-10 pr-10"
+                className="pl-10 pr-10 bg-white/70 dark:bg-white/5 border-white/20 text-gray-900 dark:text-white placeholder:text-gray-500"
                 error={errors.password?.message}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 h-4 w-4 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-2.5 text-white/60 hover:text-white"
               >
                 {showPassword ? <EyeOff /> : <Eye />}
               </button>
             </div>
           </div>
 
-          <Button type="submit" className="w-full" loading={isLoading}>
+          <Button type="submit" className="w-full h-11" loading={isLoading}>
             Sign In
           </Button>
         </form>
 
-        <div className="text-center text-sm">
-          <span className="text-muted-foreground">Don't have an account? </span>
+        <div className="text-center text-sm text-white/80">
+          <span className="">Don't have an account? </span>
           <button
             onClick={onSwitchToSignup}
-            className="text-primary hover:underline font-medium"
+            className="text-white hover:underline font-medium"
           >
             Sign up
           </button>
