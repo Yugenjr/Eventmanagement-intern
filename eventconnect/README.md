@@ -116,10 +116,10 @@ A modern, real-time event management application built with Next.js 15, Firebase
 ## 🔧 Firebase Setup Instructions
 
 ### 1. Firebase Project Setup
-Your Firebase project is already configured with these settings:
-- **Project ID**: `event-d540a`
-- **Auth Domain**: `event-d540a.firebaseapp.com`
-- **Storage Bucket**: `event-d540a.firebasestorage.app`
+Add your Firebase settings (example):
+- Project ID: `your_project_id`
+- Auth Domain: `your_project.firebaseapp.com`
+- Storage Bucket: `your_project.appspot.com`
 
 ### 2. Enable Authentication
 1. Go to [Firebase Console](https://console.firebase.google.com/project/event-d540a)
@@ -189,14 +189,14 @@ service firebase.storage {
 
 ### Environment Variables for Production
 ```env
-NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyCV6sScyCND6Y1ZX9syYHHuiUagEEgeZP0
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=event-d540a.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_DATABASE_URL=https://event-d540a-default-rtdb.asia-southeast1.firebasedatabase.app
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=event-d540a
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=event-d540a.firebasestorage.app
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=617216950786
-NEXT_PUBLIC_FIREBASE_APP_ID=1:617216950786:web:c4cf3adc1c95314cd69d1b
-NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=G-K5KBNZTF5Z
+NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_DATABASE_URL=https://your_project-default-rtdb.YOUR_REGION.firebasedatabase.app
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
 ```
 
 ## ✨ Enhanced UI Features
