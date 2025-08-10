@@ -98,6 +98,13 @@ export default function EventsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const { user } = useAuth();
 
+  // Require login to view events list
+  useEffect(() => {
+    if (!user) {
+      window.location.href = "/auth";
+    }
+  }, [user]);
+
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -136,7 +143,7 @@ export default function EventsPage() {
             </p>
           </div>
           
-          {user && (
+          {user?.role === "admin" && (
             <Button asChild>
               <Link href="/events/create">
                 <Plus className="w-4 h-4 mr-2" />

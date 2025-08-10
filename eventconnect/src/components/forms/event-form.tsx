@@ -30,6 +30,8 @@ const eventSchema = z.object({
   category: z.string().min(1, "Category is required"),
   maxAttendees: z.string().optional(),
   isPublic: z.boolean().default(true),
+  isPaid: z.boolean().default(false),
+  price: z.string().optional(),
 });
 
 type EventFormData = z.infer<typeof eventSchema>;
@@ -132,6 +134,8 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
         bannerFile,
         maxAttendees: data.maxAttendees ? parseInt(data.maxAttendees) : undefined,
         isPublic: data.isPublic,
+        isPaid: data.isPaid,
+        price: data.isPaid && data.price ? parseFloat(data.price) : undefined,
         tags,
       };
 
@@ -309,17 +313,41 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
               </div>
             </div>
 
-            {/* Public/Private Toggle */}
-            <div className="flex items-center space-x-2">
-              <input
-                {...register("isPublic")}
-                type="checkbox"
-                id="isPublic"
-                className="rounded border-input"
+            {/* Public/Private & Paid toggles */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  {...register("isPublic")}
+                  type="checkbox"
+                  id="isPublic"
+                  className="rounded border-input"
+                />
+                <label htmlFor="isPublic" className="text-sm font-medium">
+                  Make this event public
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  {...register("isPaid")}
+                  type="checkbox"
+                  id="isPaid"
+                  className="rounded border-input"
+                />
+                <label htmlFor="isPaid" className="text-sm font-medium">
+                  Paid event
+                </label>
+              </div>
+            </div>
+
+            {/* Price field (conditional) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                {...register("price")}
+                type="number"
+                label="Price (USD)"
+                placeholder="0.00"
               />
-              <label htmlFor="isPublic" className="text-sm font-medium">
-                Make this event public
-              </label>
             </div>
 
             {/* Submit Button */}

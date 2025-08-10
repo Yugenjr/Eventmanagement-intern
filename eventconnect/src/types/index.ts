@@ -1,9 +1,12 @@
 import { Timestamp } from "firebase/firestore";
 
+export type Role = "user" | "admin";
+
 export interface User {
   uid: string;
   email: string;
   displayName: string;
+  role: Role;
   photoURL?: string;
   createdAt: Timestamp;
 }
@@ -22,6 +25,8 @@ export interface Event {
   registrationCount: number;
   maxAttendees?: number;
   isPublic: boolean;
+  isPaid?: boolean;
+  price?: number;
   tags: string[];
 }
 
@@ -58,6 +63,8 @@ export interface CreateEventData {
   bannerFile?: File;
   maxAttendees?: number;
   isPublic: boolean;
+  isPaid?: boolean;
+  price?: number;
   tags: string[];
 }
 

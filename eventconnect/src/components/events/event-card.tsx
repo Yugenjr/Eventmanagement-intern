@@ -190,6 +190,12 @@ export function EventCard({ event, variant = "default", showActions = true }: Ev
             <MapPin className="w-4 h-4 mr-2" />
             {event.location}
           </div>
+          {event.isPaid && (
+            <div className="flex items-center text-sm text-muted-foreground">
+              <span className="mr-2 font-medium text-foreground">Price:</span>
+              <span>${event.price?.toFixed?.(2) ?? event.price}</span>
+            </div>
+          )}
         </div>
 
         {/* Tags */}
@@ -217,15 +223,25 @@ export function EventCard({ event, variant = "default", showActions = true }: Ev
             </Button>
             
             {user && isUpcoming && (
-              <Button
-                variant={isRegistered ? "outline" : "default"}
-                onClick={handleRegistration}
-                loading={isLoading}
-                disabled={event.maxAttendees ? registrationCount >= event.maxAttendees : false}
-                className="flex-1"
-              >
-                {isRegistered ? "Unregister" : "Register"}
-              </Button>
+              event.isPaid ? (
+                <Button
+                  variant="default"
+                  className="flex-1"
+                  onClick={() => alert("Proceed to payment gateway")}
+                >
+                  Pay & Register
+                </Button>
+              ) : (
+                <Button
+                  variant={isRegistered ? "outline" : "default"}
+                  onClick={handleRegistration}
+                  loading={isLoading}
+                  disabled={event.maxAttendees ? registrationCount >= event.maxAttendees : false}
+                  className="flex-1"
+                >
+                  {isRegistered ? "Unregister" : "Register"}
+                </Button>
+              )
             )}
           </div>
         )}

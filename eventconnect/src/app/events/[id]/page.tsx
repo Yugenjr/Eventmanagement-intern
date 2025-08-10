@@ -153,6 +153,7 @@ export default function EventDetailPage() {
   const isUpcoming = eventDate > new Date();
   const isPast = eventDate < new Date();
   const isCreator = user?.uid === event.createdBy;
+  const isAdmin = user?.role === "admin";
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -287,7 +288,7 @@ export default function EventDetailPage() {
                 Share Event
               </Button>
 
-              {isCreator && (
+              {(isCreator || isAdmin) && (
                 <div className="space-y-2">
                   <Button variant="outline" asChild className="w-full">
                     <Link href={`/events/${event.id}/edit`}>

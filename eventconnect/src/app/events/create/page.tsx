@@ -10,8 +10,12 @@ export default function CreateEventPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/auth");
+    if (!loading) {
+      if (!user) {
+        router.push("/auth");
+      } else if (user.role !== "admin") {
+        router.push("/events");
+      }
     }
   }, [user, loading, router]);
 

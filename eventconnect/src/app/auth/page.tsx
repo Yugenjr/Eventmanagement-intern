@@ -55,6 +55,9 @@ export default function AuthPage() {
             ) : (
               <SignupForm onSwitchToLogin={() => setIsLogin(true)} />
             )}
+            <div className="mt-4 text-center text-xs text-white/60">
+              Note: Admins can create and manage events; Users can view and register.
+            </div>
           </div>
         </div>
       </div>

@@ -45,6 +45,8 @@ export async function createEvent(eventData: CreateEventData, userId: string): P
       registrationCount: 0,
       maxAttendees: eventData.maxAttendees,
       isPublic: eventData.isPublic,
+      isPaid: eventData.isPaid || false,
+      price: eventData.price || undefined,
       tags: eventData.tags,
     };
 
@@ -101,6 +103,8 @@ export async function updateEvent(eventData: UpdateEventData, userId: string): P
     if (eventData.category !== undefined) updateData.category = eventData.category;
     if (eventData.maxAttendees !== undefined) updateData.maxAttendees = eventData.maxAttendees;
     if (eventData.isPublic !== undefined) updateData.isPublic = eventData.isPublic;
+    if (eventData.isPaid !== undefined) updateData.isPaid = eventData.isPaid;
+    if (eventData.price !== undefined) updateData.price = eventData.price;
     if (eventData.tags !== undefined) updateData.tags = eventData.tags;
     if (bannerUrl !== existingEvent.bannerUrl) updateData.bannerUrl = bannerUrl;
 

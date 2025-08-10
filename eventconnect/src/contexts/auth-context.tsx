@@ -12,7 +12,7 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, googleProvider, db } from "@/lib/firebase";
-import { User, AuthContextType } from "@/types";
+import { User, AuthContextType, Role } from "@/types";
 import toast from "react-hot-toast";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,10 +44,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
           uid: firebaseUser.uid,
           email: firebaseUser.email!,
           displayName: firebaseUser.displayName || userData?.displayName || "",
+          role: (userData?.role as Role) || "user",
           photoURL: firebaseUser.photoURL || userData?.photoURL,
           createdAt: userData?.createdAt || serverTimestamp(),
         };
-        
+
         setUser(user);
       } else {
         setUser(null);
@@ -82,7 +83,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const signUp = async (email: string, password: string, displayName: string) => {
+  const signUp = async (email: string, password: string, displayName: string, role: Role = "user") => {
     try {
       setLoading(true);
       const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
@@ -95,10 +96,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
         displayName,
+        role,
         photoURL: firebaseUser.photoURL,
         createdAt: serverTimestamp(),
       };
-      
+
       await setDoc(doc(db, "users", firebaseUser.uid), userData);
       toast.success("Account created successfully!");
     } catch (error: any) {
@@ -128,6 +130,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
             displayName: firebaseUser.displayName,
+            role: "user" as Role,
             photoURL: firebaseUser.photoURL,
             createdAt: serverTimestamp(),
           };

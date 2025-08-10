@@ -16,6 +16,7 @@ const signupSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
+  role: z.enum(["user", "admin"]).default("user"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -44,7 +45,7 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
   const onSubmit = async (data: SignupFormData) => {
     try {
       setIsLoading(true);
-      await signUp(data.email, data.password, data.displayName);
+      await signUp(data.email, data.password, data.displayName, data.role);
     } catch (error) {
       // Error is handled in the auth context
     } finally {
@@ -100,7 +101,7 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="relative">
               <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -110,6 +111,22 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
                 className="pl-10"
                 error={errors.displayName?.message}
               />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Role</label>
+              <div className="flex gap-3">
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="radio" value="user" defaultChecked {...register("role")} />
+                  User
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="radio" value="admin" {...register("role")} />
+                  Admin
+                </label>
+              </div>
+              {errors as any && (errors as any).role && (
+                <p className="text-sm text-destructive">{(errors as any).role?.message as any}</p>
+              )}
             </div>
           </div>
 
