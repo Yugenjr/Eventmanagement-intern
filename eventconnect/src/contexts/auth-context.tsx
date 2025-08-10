@@ -111,7 +111,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (desiredRole?: Role) => {
     try {
       setLoading(true);
 
@@ -130,7 +130,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
             displayName: firebaseUser.displayName,
-            role: "user" as Role,
+            role: desiredRole ?? ("user" as Role),
             photoURL: firebaseUser.photoURL,
             createdAt: serverTimestamp(),
           };

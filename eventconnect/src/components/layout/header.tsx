@@ -40,7 +40,6 @@ export function Header() {
   const router = useRouter();
 
   const navigation = [
-    { name: "Events", href: "/events", icon: Calendar },
     { name: "Dashboard", href: "/dashboard", icon: User, requiresAuth: true },
   ];
 
@@ -85,13 +84,15 @@ export function Header() {
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <>
-                <Button asChild size="sm">
-                  <Link href="/events/create">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Event
-                  </Link>
-                </Button>
-                
+                {user.role === "admin" && (
+                  <Button asChild size="sm">
+                    <Link href="/events/create">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Event
+                    </Link>
+                  </Button>
+                )}
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" className="relative">
@@ -193,14 +194,16 @@ export function Header() {
               
               {user ? (
                 <>
-                  <Link
-                    href="/events/create"
-                    className="flex items-center space-x-2 text-sm font-medium text-primary"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Create Event</span>
-                  </Link>
+                  {user.role === "admin" && (
+                    <Link
+                      href="/events/create"
+                      className="flex items-center space-x-2 text-sm font-medium text-primary"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Create Event</span>
+                    </Link>
+                  )}
                   <button
                     onClick={toggleTheme}
                     className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"

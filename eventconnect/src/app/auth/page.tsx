@@ -14,7 +14,9 @@ export default function AuthPage() {
 
   useEffect(() => {
     if (user) {
-      router.push("/events");
+      // Route to section based on role
+      if (user.role === "admin") router.push("/admin");
+      else router.push("/events");
     }
   }, [user, router]);
 

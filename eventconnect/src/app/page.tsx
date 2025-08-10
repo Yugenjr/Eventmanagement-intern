@@ -41,15 +41,9 @@ export default function Home() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8">
               <Button size="lg" className="text-lg px-8 py-4 h-14 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300" asChild>
-                <Link href="/events">
-                  <Calendar className="w-5 h-5 mr-2" />
-                  Explore Events
-                </Link>
-              </Button>
-              <Button variant="outline" size="lg" className="text-lg px-8 py-4 h-14 border-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300" asChild>
                 <Link href="/auth">
                   <Users className="w-5 h-5 mr-2" />
-                  Join Community
+                  Get Started
                 </Link>
               </Button>
             </div>
@@ -191,7 +185,7 @@ export default function Home() {
                   </div>
 
                   <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" asChild>
-                    <Link href="/events">View Details</Link>
+                    <Link href="/auth">Get Started</Link>
                   </Button>
                 </div>
               </div>

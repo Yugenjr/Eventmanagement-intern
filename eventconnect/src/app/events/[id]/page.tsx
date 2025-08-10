@@ -74,11 +74,14 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // In a real app, fetch event data here
-    if (user) {
-      setIsRegistered(mockRegistrations.some(reg => reg.uid === user.uid));
+    // Require auth
+    if (!user) {
+      router.push("/auth");
+      return;
     }
-  }, [user]);
+    // In a real app, fetch event data here
+    setIsRegistered(mockRegistrations.some(reg => reg.uid === user.uid));
+  }, [user, router]);
 
   const handleRegistration = async () => {
     if (!user) {

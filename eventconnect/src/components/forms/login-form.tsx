@@ -46,16 +46,6 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-      setIsLoading(true);
-      await signInWithGoogle();
-    } catch (error) {
-      // Error is handled in the auth context
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <Card className="w-full bg-white/95 dark:bg-gray-900/70 border border-white/10 shadow-2xl backdrop-blur-md">
@@ -68,22 +58,33 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
-        <Button
-          variant="outline"
-          className="w-full h-11 text-base border-2 border-white/20 hover:bg-white/40 dark:hover:bg-white/10"
-          onClick={handleGoogleSignIn}
-          disabled={isLoading}
-        >
-          <FcGoogle className="mr-3 h-5 w-5" />
-          Continue with Google
-        </Button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Button
+            variant="outline"
+            className="w-full h-11 text-base border-2 border-white/20 hover:bg-white/40 dark:hover:bg-white/10"
+            onClick={() => signInWithGoogle("user")}
+            disabled={isLoading}
+          >
+            <FcGoogle className="mr-3 h-5 w-5" />
+            Continue as User
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full h-11 text-base border-2 border-white/20 hover:bg-white/40 dark:hover:bg-white/10"
+            onClick={() => signInWithGoogle("admin")}
+            disabled={isLoading}
+          >
+            <FcGoogle className="mr-3 h-5 w-5" />
+            Continue as Admin
+          </Button>
+        </div>
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t border-white/20" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-transparent px-2 text-white/70">Or continue with</span>
+            <span className="bg-transparent px-2 text-white/70">Or sign in with email</span>
           </div>
         </div>
 
