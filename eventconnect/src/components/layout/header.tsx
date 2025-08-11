@@ -26,6 +26,7 @@ import {
   Menu,
   X,
   Sparkles,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -41,10 +42,26 @@ export function Header() {
   };
   const router = useRouter();
 
-  const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: User, requiresAuth: true },
-    // Admin link will be rendered conditionally below
-  ];
+  // Role-specific navigation
+  const getUserNavigation = () => {
+    if (!user) return [];
+
+    if (user.role === "admin") {
+      // ADMIN-ONLY navigation - access to user data
+      return [
+        { name: "Admin Dashboard", href: "/admindashboard", icon: Settings },
+      ];
+    } else {
+      // USER navigation - no access to other users' data
+      return [
+        { name: "Events", href: "/events", icon: Calendar },
+        { name: "Feedback", href: "/feedback", icon: MessageSquare },
+        { name: "Dashboard", href: "/userdashboard", icon: User },
+      ];
+    }
+  };
+
+  const navigation = getUserNavigation();
 
   const handleSignOut = async () => {
     await signOut();
@@ -67,29 +84,16 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            {navigation.map((item) => {
-              if (item.requiresAuth && !user) return null;
-
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className="flex items-center space-x-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                >
-                  <item.icon className="w-4 h-4" />
-                  <span>{item.name}</span>
-                </Link>
-              );
-            })}
-            {user?.role === "admin" && (
+            {navigation.map((item) => (
               <Link
-                href="/admin"
+                key={item.name}
+                href={item.href}
                 className="flex items-center space-x-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
               >
-                <Settings className="w-4 h-4" />
-                <span>Admin</span>
+                <item.icon className="w-4 h-4" />
+                <span>{item.name}</span>
               </Link>
-            )}
+            ))}
           </nav>
 
           {/* Desktop Actions */}
@@ -123,7 +127,7 @@ export function Header() {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link href="/dashboard">
+                      <Link href={user.role === "admin" ? "/admindashboard" : "/userdashboard"}>
                         <User className="w-4 h-4 mr-2" />
                         Dashboard
                       </Link>
@@ -134,6 +138,14 @@ export function Header() {
                         Settings
                       </Link>
                     </DropdownMenuItem>
+                    {user.role !== "admin" && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/feedback">
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          Feedback
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={toggleTheme}>
                       {mounted && theme === "dark" ? (
@@ -183,21 +195,17 @@ export function Header() {
         {isMobileMenuOpen && (
           <div className="md:hidden border-t py-4">
             <nav className="flex flex-col space-y-4">
-              {navigation.map((item) => {
-                if (item.requiresAuth && !user) return null;
-                
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <item.icon className="w-4 h-4" />
-                    <span>{item.name}</span>
-                  </Link>
-                );
-              })}
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <item.icon className="w-4 h-4" />
+                  <span>{item.name}</span>
+                </Link>
+              ))}
               
               {user ? (
                 <>

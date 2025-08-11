@@ -4,6 +4,9 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/contexts/auth-context";
 import { Header } from "@/components/layout/header";
+import { DemoNotice } from "@/components/demo-notice";
+import { FirebaseSetupCheck } from "@/components/firebase-setup-check";
+import ErrorBoundary from "@/components/error-boundary";
 import "./globals.css";
 
 const inter = Inter({
@@ -54,23 +57,29 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            <div className="min-h-screen bg-background">
-              <Header />
-              <main>{children}</main>
-            </div>
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: "hsl(var(--background))",
-                  color: "hsl(var(--foreground))",
-                  border: "1px solid hsl(var(--border))",
-                },
-              }}
-            />
-          </AuthProvider>
+          <ErrorBoundary>
+            <AuthProvider>
+              <div className="min-h-screen bg-background">
+                <Header />
+                <div className="container mx-auto px-4 py-4">
+                  <DemoNotice />
+                  <FirebaseSetupCheck />
+                </div>
+                <main>{children}</main>
+              </div>
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    background: "hsl(var(--background))",
+                    color: "hsl(var(--foreground))",
+                    border: "1px solid hsl(var(--border))",
+                  },
+                }}
+              />
+            </AuthProvider>
+          </ErrorBoundary>
         </ThemeProvider>
       </body>
     </html>

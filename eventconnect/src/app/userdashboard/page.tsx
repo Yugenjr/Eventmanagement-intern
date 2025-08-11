@@ -8,9 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { EventCard } from "@/components/events/event-card";
 import { useAuth } from "@/contexts/auth-context";
+import { AuthGuard } from "@/components/auth/auth-guard";
 import { Event } from "@/types";
 import { getEvents } from "@/lib/events";
 import { isUserRegistered, registerForEvent, unregisterFromEvent } from "@/lib/registrations";
+import { rtdbEvents } from "@/lib/rtdb-events";
 import {
   Calendar,
   Users,
@@ -28,26 +30,50 @@ const mockUserEvents: Event[] = [] as any;
 
 const mockRegisteredEvents: Event[] = [] as any;
 
+// Helper function for safe date conversion
+const convertToDate = (dateValue: any): Date => {
+  if (dateValue instanceof Date) return dateValue;
+  if (dateValue?.toDate && typeof dateValue.toDate === 'function') return dateValue.toDate();
+  if (dateValue?.seconds) return new Date(dateValue.seconds * 1000);
+  if (typeof dateValue === 'string') return new Date(dateValue);
+  return new Date();
+};
+
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [userEvents, setUserEvents] = useState<Event[]>([]);
   const [registeredEvents, setRegisteredEvents] = useState<Event[]>([]);
   const [discover, setDiscover] = useState<Event[]>([]);
-  const [activeTab, setActiveTab] = useState<"created" | "registered" | "discover">("created");
+  const [activeTab, setActiveTab] = useState<"created" | "registered" | "discover">("discover");
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/auth");
-    }
-    if (!loading && user) {
+    if (!loading && user && user.role === "user") {
+      // Set initial tab for regular users
+      setActiveTab("discover");
+
       // Fetch discover list and user's created/registered events
       (async () => {
         const res = await getEvents({}, { field: "createdAt", direction: "desc" }, { page: 1, limit: 12 });
         setDiscover(res.events);
       })();
     }
-  }, [user, loading, router]);
+  }, [user, loading]);
+
+  // Real-time events subscription
+  useEffect(() => {
+    if (!user || user.role === "admin") return;
+
+    const unsubscribe = rtdbEvents.subscribeToEvents((rtdbEventsData) => {
+      // Update discover events with real-time data from RTDB events section
+      const publicEvents = rtdbEventsData.filter(event => event.isPublic);
+      setDiscover(publicEvents);
+      console.log("🔄 User dashboard: Real-time events from RTDB events section:", publicEvents.length, "public events");
+      console.log("📋 Public events data:", publicEvents);
+    });
+
+    return unsubscribe;
+  }, [user]);
 
   if (loading) {
     return (
@@ -69,25 +95,28 @@ export default function DashboardPage() {
   }
 
   const totalRegistrations = userEvents.reduce((sum, event) => sum + event.registrationCount, 0);
-  const upcomingEvents = userEvents.filter(event => event.date.toDate() > new Date());
-  const pastEvents = userEvents.filter(event => event.date.toDate() <= new Date());
+  const upcomingEvents = userEvents.filter(event => convertToDate(event.date) > new Date());
+  const pastEvents = userEvents.filter(event => convertToDate(event.date) <= new Date());
 
   return (
+    <AuthGuard requireAuth={true} requiredRole="user">
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold font-display mb-2">Dashboard</h1>
           <p className="text-muted-foreground">
-            Welcome back, {user.displayName}! Manage your events and track your activity.
+            Welcome back, {user?.displayName}! Manage your events and track your activity.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/events/create">
-            <Plus className="w-4 h-4 mr-2" />
-            Create Event
-          </Link>
-        </Button>
+        {user && user.role === "admin" && (
+          <Button asChild>
+            <Link href="/events/create">
+              <Plus className="w-4 h-4 mr-2" />
+              Create Event
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -149,12 +178,14 @@ export default function DashboardPage() {
 
       {/* Tabs */}
       <div className="flex space-x-1 mb-6">
-        <Button
-          variant={activeTab === "created" ? "default" : "ghost"}
-          onClick={() => setActiveTab("created")}
-        >
-          My Events ({userEvents.length})
-        </Button>
+        {user && user.role === "admin" && (
+          <Button
+            variant={activeTab === "created" ? "default" : "ghost"}
+            onClick={() => setActiveTab("created")}
+          >
+            My Events ({userEvents.length})
+          </Button>
+        )}
         <Button
           variant={activeTab === "registered" ? "default" : "ghost"}
           onClick={() => setActiveTab("registered")}
@@ -165,7 +196,7 @@ export default function DashboardPage() {
           variant={activeTab === "discover" ? "default" : "ghost"}
           onClick={() => setActiveTab("discover")}
         >
-          Discover
+          Discover Events
         </Button>
       </div>
 
@@ -213,7 +244,7 @@ export default function DashboardPage() {
                       <div className="space-y-2 mb-4">
                         <div className="flex items-center text-sm text-muted-foreground">
                           <Calendar className="w-4 h-4 mr-2" />
-                          {event.date.toDate().toLocaleDateString()}
+                          {convertToDate(event.date).toLocaleDateString()}
                         </div>
                         <div className="flex items-center text-sm text-muted-foreground">
                           <MapPin className="w-4 h-4 mr-2" />
@@ -302,5 +333,6 @@ export default function DashboardPage() {
         </div>
       )}
     </div>
+    </AuthGuard>
   );
 }

@@ -22,11 +22,15 @@ import { Event, CreateEventData, UpdateEventData, EventFilters, EventSortOptions
 
 // Create a new event
 export async function createEvent(eventData: CreateEventData, userId: string): Promise<string> {
+  if (!db) {
+    throw new Error("Database not available. Please check Firebase configuration.");
+  }
+
   try {
     let bannerUrl = "";
-    
+
     // Upload banner image if provided
-    if (eventData.bannerFile) {
+    if (eventData.bannerFile && storage) {
       const imageRef = ref(storage, `events/${Date.now()}_${eventData.bannerFile.name}`);
       const snapshot = await uploadBytes(imageRef, eventData.bannerFile);
       bannerUrl = await getDownloadURL(snapshot.ref);
@@ -186,6 +190,10 @@ export async function getEvents(
   sortOptions: EventSortOptions = { field: "date", direction: "asc" },
   pagination: PaginationOptions = { page: 1, limit: 10 }
 ): Promise<EventListResponse> {
+  if (!db) {
+    return { events: [], total: 0, hasMore: false };
+  }
+
   try {
     let q = query(collection(db, "events"));
     

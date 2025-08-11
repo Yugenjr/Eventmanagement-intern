@@ -14,7 +14,7 @@ export default function CreateEventPage() {
       if (!user) {
         router.push("/auth");
       } else if (user.role !== "admin") {
-        router.push("/events");
+        router.push("/userdashboard");
       }
     }
   }, [user, loading, router]);

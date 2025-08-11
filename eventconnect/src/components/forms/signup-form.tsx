@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAuth } from "@/contexts/auth-context";
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
+import toast from "react-hot-toast";
 
 const signupSchema = z.object({
   displayName: z.string().min(2, "Name must be at least 2 characters"),
@@ -28,29 +29,16 @@ interface SignupFormProps {
   onSwitchToLogin: () => void;
 }
 
-function RoleToggle({ registerRole }: { registerRole: any }) {
-  const [role, setRole] = useState<"user" | "admin">("user");
+// Simple role selection - no complex state management
+function RoleSelect({ register }: { register: any }) {
   return (
-    <>
-      <input type="radio" value="user" {...registerRole} checked={role === 'user'} onChange={() => setRole('user')} className="hidden" />
-      <input type="radio" value="admin" {...registerRole} checked={role === 'admin'} onChange={() => setRole('admin')} className="hidden" />
-      <Button
-        type="button"
-        variant="outline"
-        className={`h-10 border-2 ${role === 'user' ? 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-300/60 dark:ring-blue-400/50' : 'border-white/20 text-white/80 hover:bg-white/40 dark:hover:bg-white/10'}`}
-        onClick={() => setRole('user')}
-      >
-        User
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        className={`h-10 border-2 ${role === 'admin' ? 'bg-purple-600 text-white border-purple-600 ring-2 ring-purple-300/60 dark:ring-purple-400/50' : 'border-white/20 text-white/80 hover:bg-white/40 dark:hover:bg-white/10'}`}
-        onClick={() => setRole('admin')}
-      >
-        Admin
-      </Button>
-    </>
+    <select
+      {...register}
+      className="w-full h-10 px-3 bg-white/10 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      <option value="user" className="text-black">👤 Regular User</option>
+      <option value="admin" className="text-black">👑 Administrator</option>
+    </select>
   );
 }
 
@@ -66,14 +54,39 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
     formState: { errors },
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
+    defaultValues: {
+      role: "user"
+    }
   });
 
   const onSubmit = async (data: SignupFormData) => {
     try {
       setIsLoading(true);
+      console.log("=== SIGNUP FORM SUBMISSION ===");
+      console.log("Form data:", data);
+      console.log("Role being sent:", data.role);
+      console.log("Role type:", typeof data.role);
+
       await signUp(data.email, data.password, data.displayName, data.role);
+      console.log("Signup successful");
     } catch (error) {
-      // Error is handled in the auth context
+      console.error("Signup error:", error);
+      toast.error("Failed to create account. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Test function to create admin directly
+  const createTestAdmin = async () => {
+    try {
+      setIsLoading(true);
+      console.log("Creating test admin directly...");
+      await signUp("admin@test.com", "password123", "Test Admin", "admin");
+      console.log("Test admin created successfully");
+    } catch (error) {
+      console.error("Test admin creation failed:", error);
+      toast.error("Test admin creation failed");
     } finally {
       setIsLoading(false);
     }
@@ -131,6 +144,20 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
           </div>
         </div>
 
+        {/* Test Admin Button */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4">
+            <Button
+              type="button"
+              onClick={createTestAdmin}
+              disabled={isLoading}
+              className="w-full bg-red-600 hover:bg-red-700 text-white"
+            >
+              🚨 CREATE TEST ADMIN (admin@test.com)
+            </Button>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-4">
             <div className="relative">
@@ -146,9 +173,10 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-white/80">Role</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <RoleToggle registerRole={register("role")} />
-              </div>
+              <RoleSelect register={register("role")} />
+              {errors.role && (
+                <p className="text-red-400 text-sm">{errors.role.message}</p>
+              )}
             </div>
           </div>
 

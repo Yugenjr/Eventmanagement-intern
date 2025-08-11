@@ -17,6 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/auth-context";
+import { createEvent, updateEvent } from "@/lib/events";
+import { rtdbEvents } from "@/lib/rtdb-events";
 import { EventCategory } from "@/types";
 import { Calendar, MapPin, Users, Upload, X, Plus } from "lucide-react";
 import toast from "react-hot-toast";
@@ -121,9 +123,11 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
 
     try {
       setIsLoading(true);
-      
+      console.log("Starting event creation process...");
+
       // Combine date and time
       const eventDateTime = new Date(`${data.date}T${data.time}`);
+      console.log("Event date/time:", eventDateTime);
       
       const eventData = {
         title: data.title,
@@ -139,14 +143,52 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
         tags,
       };
 
-      // For now, just show success message (Firebase integration would go here)
-      toast.success(isEditing ? "Event updated successfully!" : "Event created successfully!");
-      router.push("/events");
+      if (isEditing && initialEvent) {
+        // Update existing event
+        const updatedEvent = await updateEvent(initialEvent.id, eventData);
+        // Also save to RTDB for real-time updates
+        await rtdbEvents.saveEvent(updatedEvent);
+        toast.success("Event updated successfully!");
+      } else {
+        // Create new event
+        console.log("Creating event with data:", eventData);
+        const eventId = await createEvent(eventData, user.uid);
+        console.log("Event created with ID:", eventId);
+
+        // Get the created event and save to RTDB
+        const createdEvent = {
+          id: eventId,
+          ...eventData,
+          createdBy: user.uid,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        console.log("Saving to RTDB:", createdEvent);
+        try {
+          await rtdbEvents.saveEvent(createdEvent as any);
+          console.log("RTDB save successful");
+        } catch (rtdbError) {
+          console.error("RTDB save failed:", rtdbError);
+          // Continue anyway - Firestore save was successful
+        }
+
+        toast.success("Event created successfully!");
+      }
+
+      router.push(user.role === "admin" ? "/admindashboard" : "/userdashboard");
       
     } catch (error: any) {
-      toast.error(error.message || "Failed to save event");
+      console.error("❌ Event creation error:", error);
+      console.error("Error details:", {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+      toast.error(error.message || "Failed to save event. Please try again.");
     } finally {
       setIsLoading(false);
+      console.log("✅ Event creation process completed");
     }
   };
 
@@ -163,6 +205,42 @@ export function EventForm({ initialData, isEditing = false }: EventFormProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Test Firebase Connection */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <Button
+                type="button"
+                onClick={async () => {
+                  try {
+                    console.log("🔥 Testing Firebase connection...");
+                    const testEvent = {
+                      title: `Test Event ${new Date().toLocaleTimeString()}`,
+                      description: "Test event description",
+                      date: new Date(),
+                      location: "Test Location",
+                      category: "test",
+                      maxAttendees: 50,
+                      isPublic: true,
+                      isPaid: false,
+                      tags: ["test"]
+                    };
+
+                    const eventId = await createEvent(testEvent, user.uid);
+                    console.log("✅ Test event created:", eventId);
+                    toast.success("Test event created successfully!");
+                  } catch (error) {
+                    console.error("❌ Test failed:", error);
+                    toast.error("Test failed: " + (error as any).message);
+                  }
+                }}
+                variant="outline"
+                className="w-full"
+              >
+                🧪 Test Firebase Connection
+              </Button>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Banner Upload */}
             <div className="space-y-2">

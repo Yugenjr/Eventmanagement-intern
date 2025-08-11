@@ -33,14 +33,45 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   useEffect(() => {
+    if (!auth || !db) {
+      console.warn("Firebase not properly initialized. Auth will not work.");
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
+    // Simple initialization - no interference with auth state
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
-          // Get additional user data from Firestore
-          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-          const userData = userDoc.data();
+          // Get additional user data from Firestore with retry for new users
+          let userData = null;
+          let retries = 0;
+          const maxRetries = 3;
+
+          while (retries < maxRetries) {
+            const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+            userData = userDoc.data();
+
+            if (userData) {
+              break; // Found the user data
+            }
+
+            // If no data found, wait a bit and retry (for new users)
+            retries++;
+            if (retries < maxRetries) {
+              console.log(`User data not found, retrying... (${retries}/${maxRetries})`);
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+          }
+
+          console.log("Firestore user data:", userData);
+          console.log("User role from Firestore:", userData?.role);
 
           const user: User = {
             uid: firebaseUser.uid,
@@ -51,7 +82,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
             createdAt: userData?.createdAt || serverTimestamp(),
           };
 
+          console.log("Final user object with role:", user.role);
+
           setUser(user);
+
+          // Show appropriate welcome message
+          if (localStorage.getItem('justSignedIn') === 'true') {
+            localStorage.removeItem('justSignedIn');
+            toast.success("Welcome back!");
+          } else if (localStorage.getItem('justSignedUp') === 'true') {
+            localStorage.removeItem('justSignedUp');
+            toast.success("Account created successfully! Welcome to EventConnect!");
+          }
         } catch (err) {
           // Offline or Firestore unavailable: fall back to auth user only
           let desiredRole: Role | undefined = undefined;
@@ -74,6 +116,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           });
         }
       } else {
+        // No authenticated user - ensure user state is cleared
         setUser(null);
       }
       setLoading(false);
@@ -83,6 +126,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const logLoginActivity = async (firebaseUser: FirebaseUser) => {
+    if (!rtdb) return; // Skip if Firebase not initialized
     try {
       const activityRef = dbRef(rtdb, "recentLogins");
       const itemRef = dbPush(activityRef);
@@ -98,64 +142,132 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const signIn = async (email: string, password: string) => {
+    if (!auth) {
+      toast.error("Authentication not available. Please check Firebase configuration.");
+      return;
+    }
     try {
+      setIsSigningIn(true);
       setLoading(true);
+
       const cred = await signInWithEmailAndPassword(auth, email, password);
+      localStorage.setItem('justSignedIn', 'true'); // Flag to show welcome message
+
       await logLoginActivity(cred.user);
-      toast.success("Welcome back!");
+      // Success message will be shown in onAuthStateChanged
     } catch (error: any) {
       console.error("Sign-in error:", error);
       if (error.code === 'auth/user-not-found') {
         toast.error("No account found with this email address");
       } else if (error.code === 'auth/wrong-password') {
         toast.error("Incorrect password");
+      } else if (error.code === 'auth/invalid-credential') {
+        toast.error("Invalid email or password. Please check your credentials and try again.");
       } else if (error.code === 'auth/invalid-email') {
         toast.error("Invalid email address");
       } else if (error.code === 'auth/too-many-requests') {
         toast.error("Too many failed attempts. Please try again later.");
+      } else if (error.code === 'auth/user-disabled') {
+        toast.error("This account has been disabled. Please contact support.");
       } else {
         toast.error("We couldn't sign you in. Please try again.");
       }
       throw error;
     } finally {
       setLoading(false);
+      setIsSigningIn(false);
     }
   };
 
   const signUp = async (email: string, password: string, displayName: string, role: Role = "user") => {
+    console.log("SignUp called with:", { email, displayName, role });
+
+    if (!auth || !db) {
+      console.error("Firebase not initialized:", { auth: !!auth, db: !!db });
+      toast.error("Authentication not available. Please check Firebase configuration.");
+      return;
+    }
     try {
+      setIsSigningIn(true);
       setLoading(true);
+      console.log("Creating user with Firebase...");
       const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
+      console.log("Firebase user created:", firebaseUser.uid);
+
+      localStorage.setItem('justSignedUp', 'true'); // Flag to show welcome message for new users
 
       // Update the user's display name (best-effort)
       try { await updateProfile(firebaseUser, { displayName }); } catch {}
 
-      // Create user document in Firestore
+      // Create user document in Firestore - CRITICAL for role assignment
+      console.log("Writing user data to Firestore with role:", role);
+      const userData = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName,
+        role, // This is the critical field
+        photoURL: firebaseUser.photoURL,
+        createdAt: serverTimestamp(),
+      };
+
       try {
-        const userData = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName,
-          role,
-          photoURL: firebaseUser.photoURL,
-          createdAt: serverTimestamp(),
-        };
         await setDoc(doc(db, "users", firebaseUser.uid), userData);
+        console.log("User data written to Firestore successfully");
+
+        // Verify the write by reading it back
+        const verifyDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+        const verifyData = verifyDoc.data();
+        console.log("Verification read from Firestore:", verifyData);
+        console.log("Verified role:", verifyData?.role);
       } catch (dbErr) {
-        console.warn("User created but Firestore write failed (offline?):", dbErr);
+        console.error("CRITICAL: Firestore write failed:", dbErr);
+        // If Firestore write fails, we should probably delete the Firebase user
+        throw new Error("Failed to save user data. Please try again.");
       }
       await logLoginActivity(firebaseUser);
-      toast.success("Account created successfully!");
+
+      // Manually set the user with correct role to ensure immediate routing
+      const newUser: User = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email!,
+        displayName,
+        role, // Use the role passed to this function
+        photoURL: firebaseUser.photoURL,
+        createdAt: new Date(),
+      };
+
+      console.log("Setting user manually with role:", role);
+      setUser(newUser);
+
+      // IMMEDIATE ROUTING BASED ON ROLE
+      console.log("Routing user based on role:", role);
+      if (typeof window !== "undefined") {
+        if (role === "admin") {
+          console.log("Redirecting admin to /admindashboard");
+          window.location.href = "/admindashboard";
+        } else {
+          console.log("Redirecting user to /userdashboard");
+          window.location.href = "/userdashboard";
+        }
+      }
+
+      // Success message will be shown in onAuthStateChanged
     } catch (error: any) {
       toast.error("We couldn't create your account. Please try again.");
       throw error;
     } finally {
       setLoading(false);
+      setIsSigningIn(false);
     }
   };
 
   const signInWithGoogle = async (desiredRole?: Role) => {
+    if (!auth || !googleProvider) {
+      toast.error("Google authentication not available. Please check Firebase configuration.");
+      return;
+    }
     try {
+      setIsSigningIn(true);
       setLoading(true);
 
       // Configure Google provider with additional settings
@@ -170,6 +282,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } catch {}
 
       const { user: firebaseUser } = await signInWithPopup(auth, googleProvider);
+
+      localStorage.setItem('justSignedIn', 'true'); // Flag for Google sign-in
 
       // Ensure user document exists and immediately reflects the selected role
       try {
@@ -206,7 +320,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         });
       } catch {}
 
-      toast.success("Welcome to EventConnect!");
+      // Success message will be shown in onAuthStateChanged
     } catch (error: any) {
       console.error("Google sign-in error:", error);
       if (error.code === 'auth/popup-closed-by-user') {
@@ -219,16 +333,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
       throw error;
     } finally {
       setLoading(false);
+      setIsSigningIn(false);
     }
   };
 
   const signOut = async () => {
+    if (!auth) {
+      toast.error("Authentication not available.");
+      return;
+    }
     try {
       await firebaseSignOut(auth);
+      // Clear any cached data
+      setUser(null);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("lastDesiredRole");
+        localStorage.removeItem("justSignedIn");
+        localStorage.removeItem("justSignedUp");
+      }
       toast.success("Signed out successfully");
     } catch (error: any) {
       toast.error("We couldn't sign you out. Please try again.");
       throw error;
+    }
+  };
+
+  // Force clear authentication state (for debugging)
+  const clearAuthState = () => {
+    setUser(null);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("lastDesiredRole");
     }
   };
 

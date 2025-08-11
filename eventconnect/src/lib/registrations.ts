@@ -15,6 +15,10 @@ import { EventRegistration } from "@/types";
 
 // Register for an event
 export async function registerForEvent(eventId: string, userId: string, userDisplayName: string, userEmail: string): Promise<void> {
+  if (!db) {
+    throw new Error("Database not available. Please check Firebase configuration.");
+  }
+
   try {
     await runTransaction(db, async (transaction) => {
       const eventRef = doc(db, "events", eventId);
@@ -144,19 +148,19 @@ export async function getUserRegistrations(userId: string): Promise<string[]> {
     // a separate collection for user registrations for better performance
     const eventsQuery = query(collection(db, "events"));
     const eventsSnapshot = await getDocs(eventsQuery);
-    
+
     const registeredEventIds: string[] = [];
-    
+
     for (const eventDoc of eventsSnapshot.docs) {
       const registrationDoc = await getDoc(
         doc(db, "events", eventDoc.id, "registrations", userId)
       );
-      
+
       if (registrationDoc.exists()) {
         registeredEventIds.push(eventDoc.id);
       }
     }
-    
+
     return registeredEventIds;
   } catch (error) {
     console.error("Error getting user registrations:", error);

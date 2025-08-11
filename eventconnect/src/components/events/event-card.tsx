@@ -68,7 +68,16 @@ export function EventCard({ event, variant = "default", showActions = true }: Ev
     }
   };
 
-  const eventDate = event.date.toDate();
+  // Safe date conversion
+  const convertToDate = (dateValue: any): Date => {
+    if (dateValue instanceof Date) return dateValue;
+    if (dateValue?.toDate && typeof dateValue.toDate === 'function') return dateValue.toDate();
+    if (dateValue?.seconds) return new Date(dateValue.seconds * 1000);
+    if (typeof dateValue === 'string') return new Date(dateValue);
+    return new Date();
+  };
+
+  const eventDate = convertToDate(event.date);
   const isUpcoming = eventDate > new Date();
   const isPast = eventDate < new Date();
 

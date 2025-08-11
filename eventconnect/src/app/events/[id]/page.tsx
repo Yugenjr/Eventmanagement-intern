@@ -24,90 +24,103 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 
-// Mock event data
-const mockEvent: Event = {
-  id: "1",
-  title: "Tech Conference 2024",
-  description: "Join industry leaders for the latest in technology trends and innovations. This comprehensive conference covers AI, blockchain, cloud computing, and emerging technologies. Network with professionals, attend workshops, and discover the future of technology.\n\nWhat you'll learn:\n• Latest AI and machine learning trends\n• Blockchain applications in business\n• Cloud computing best practices\n• Emerging technologies and their impact\n\nWho should attend:\n• Software developers\n• Tech entrepreneurs\n• Product managers\n• Technology enthusiasts",
-  date: { toDate: () => new Date("2024-03-15T10:00:00") } as any,
-  location: "San Francisco Convention Center, 747 Howard St, San Francisco, CA 94103",
-  category: "technology",
-  bannerUrl: "",
-  createdBy: "user1",
-  createdAt: { toDate: () => new Date() } as any,
-  updatedAt: { toDate: () => new Date() } as any,
-  registrationCount: 250,
-  maxAttendees: 500,
-  isPublic: true,
-  tags: ["AI", "Blockchain", "Cloud", "Networking"],
-};
-
-const mockRegistrations: EventRegistration[] = [
-  {
-    uid: "user1",
-    displayName: "John Doe",
-    email: "john@example.com",
-    registeredAt: { toDate: () => new Date() } as any,
-  },
-  {
-    uid: "user2",
-    displayName: "Jane Smith",
-    email: "jane@example.com",
-    registeredAt: { toDate: () => new Date() } as any,
-  },
-  {
-    uid: "user3",
-    displayName: "Mike Johnson",
-    email: "mike@example.com",
-    registeredAt: { toDate: () => new Date() } as any,
-  },
-];
+// Import RTDB functions for real data
+import { rtdbEvents, rtdbRegistrations } from "@/lib/rtdb-events";
+import { getEvent } from "@/lib/events";
 
 export default function EventDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  const [event, setEvent] = useState<Event | null>(mockEvent);
-  const [registrations, setRegistrations] = useState<EventRegistration[]>(mockRegistrations);
+  const [event, setEvent] = useState<Event | null>(null);
+  const [registrations, setRegistrations] = useState<any[]>([]);
   const [isRegistered, setIsRegistered] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [showRegistrations, setShowRegistrations] = useState(false);
 
+  // Load real event data from RTDB
   useEffect(() => {
-    // Require auth
     if (!user) {
       router.push("/auth");
       return;
     }
-    // In a real app, fetch event data here
-    setIsRegistered(mockRegistrations.some(reg => reg.uid === user.uid));
-  }, [user, router]);
+
+    const loadEventData = async () => {
+      try {
+        const eventId = params.id as string;
+        console.log("📅 Loading event data for:", eventId);
+
+        // Get event from Firestore first
+        const eventData = await getEvent(eventId);
+        if (eventData) {
+          setEvent(eventData);
+          console.log("✅ Event loaded:", eventData.title);
+        }
+
+        // Check if user is registered
+        const registered = await rtdbRegistrations.isUserRegistered(eventId, user.uid);
+        setIsRegistered(registered);
+        console.log("🎫 User registration status:", registered);
+
+        // Subscribe to registrations for this event
+        const unsubscribe = rtdbRegistrations.subscribeToEventRegistrations(eventId, (regs) => {
+          setRegistrations(regs);
+          console.log("👥 Event registrations updated:", regs.length);
+        });
+
+        setLoading(false);
+        return () => unsubscribe();
+      } catch (error) {
+        console.error("❌ Error loading event data:", error);
+        setLoading(false);
+      }
+    };
+
+    loadEventData();
+  }, [user, router, params.id]);
 
   const handleRegistration = async () => {
-    if (!user) {
+    if (!user || !event) {
       toast.error("Please sign in to register for events");
       router.push("/auth");
       return;
     }
 
-    setIsLoading(true);
+    setIsRegistering(true);
     try {
-      // Mock registration logic
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       if (isRegistered) {
+        // Cancel registration
+        console.log("🗑️ User canceling registration for event:", event.title);
+        await rtdbRegistrations.cancelRegistration(event.id, user.uid);
         setIsRegistered(false);
-        setEvent(prev => prev ? { ...prev, registrationCount: prev.registrationCount - 1 } : null);
-        toast.success("Successfully unregistered from event");
+        toast.success("Registration canceled successfully");
+        console.log("✅ Registration canceled");
       } else {
+        // Register for event
+        console.log("🎫 User registering for event:", event.title);
+        await rtdbRegistrations.saveRegistration({
+          eventId: event.id,
+          userId: user.uid,
+          userEmail: user.email!,
+          userName: user.displayName || user.email!,
+          userPhone: "", // Could add phone field to user profile
+          registrationDate: new Date(),
+          eventTitle: event.title,
+          eventDate: event.date instanceof Date ? event.date :
+                  event.date?.toDate ? event.date.toDate() :
+                  event.date?.seconds ? new Date(event.date.seconds * 1000) :
+                  new Date(event.date),
+        });
         setIsRegistered(true);
-        setEvent(prev => prev ? { ...prev, registrationCount: prev.registrationCount + 1 } : null);
-        toast.success("Successfully registered for event");
+        toast.success(`Successfully registered for ${event.title}!`);
+        console.log("✅ User registration completed");
       }
     } catch (error: any) {
+      console.error("❌ Registration operation failed:", error);
       toast.error(error.message || "Failed to update registration");
     } finally {
-      setIsLoading(false);
+      setIsRegistering(false);
     }
   };
 
@@ -277,12 +290,11 @@ export default function EventDetailPage() {
               {isUpcoming && (
                 <Button
                   onClick={handleRegistration}
-                  loading={isLoading}
+                  disabled={isRegistering || (event.maxAttendees ? event.registrationCount >= event.maxAttendees : false)}
                   className="w-full"
                   variant={isRegistered ? "outline" : "default"}
-                  disabled={event.maxAttendees ? event.registrationCount >= event.maxAttendees : false}
                 >
-                  {isRegistered ? "Unregister" : "Register Now"}
+                  {isRegistering ? "Processing..." : (isRegistered ? "Cancel Registration" : "Register Now")}
                 </Button>
               )}
               

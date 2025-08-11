@@ -17,6 +17,7 @@ import { Search, Filter, Calendar, Grid, List, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
+import { rtdbEvents } from "@/lib/rtdb-events";
 
 const categories: EventCategory[] = [
   "technology",
@@ -88,9 +89,18 @@ const mockEvents: Event[] = [
   },
 ];
 
+// Helper function for safe date conversion
+const convertToDate = (dateValue: any): Date => {
+  if (dateValue instanceof Date) return dateValue;
+  if (dateValue?.toDate && typeof dateValue.toDate === 'function') return dateValue.toDate();
+  if (dateValue?.seconds) return new Date(dateValue.seconds * 1000);
+  if (typeof dateValue === 'string') return new Date(dateValue);
+  return new Date();
+};
+
 export default function EventsPage() {
-  const [events, setEvents] = useState<Event[]>(mockEvents);
-  const [loading, setLoading] = useState(false);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<EventCategory | "all">("all");
   const [sortBy, setSortBy] = useState<"date" | "created" | "popular">("date");
@@ -98,13 +108,21 @@ export default function EventsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const { user } = useAuth();
 
-  // Require login to view events list
+  // Load real events from RTDB
   useEffect(() => {
     if (!user) {
       window.location.href = "/auth";
       return;
     }
-    // Gate non-admin users to this page only after sign-in; page stays same otherwise
+
+    // Subscribe to real-time events
+    const unsubscribe = rtdbEvents.subscribeToEvents((eventsData) => {
+      console.log("📅 Events page: Received events from RTDB:", eventsData.length);
+      setEvents(eventsData);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [user]);
 
   const filteredEvents = events.filter(event => {
@@ -120,9 +138,9 @@ export default function EventsPage() {
   const sortedEvents = [...filteredEvents].sort((a, b) => {
     switch (sortBy) {
       case "date":
-        return a.date.toDate().getTime() - b.date.toDate().getTime();
+        return convertToDate(a.date).getTime() - convertToDate(b.date).getTime();
       case "created":
-        return b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime();
+        return convertToDate(b.createdAt).getTime() - convertToDate(a.createdAt).getTime();
       case "popular":
         return b.registrationCount - a.registrationCount;
       default:
@@ -130,8 +148,8 @@ export default function EventsPage() {
     }
   });
 
-  const upcomingEvents = sortedEvents.filter(event => event.date.toDate() > new Date());
-  const pastEvents = sortedEvents.filter(event => event.date.toDate() <= new Date());
+  const upcomingEvents = sortedEvents.filter(event => convertToDate(event.date) > new Date());
+  const pastEvents = sortedEvents.filter(event => convertToDate(event.date) <= new Date());
 
   return (
     <div className="container mx-auto px-4 py-8">

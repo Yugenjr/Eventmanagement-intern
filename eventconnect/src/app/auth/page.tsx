@@ -12,16 +12,20 @@ export default function AuthPage() {
   const { user } = useAuth();
   const router = useRouter();
 
+  // Handle already signed in users
   useEffect(() => {
     if (user) {
-      // Route to section based on role
-      if (user.role === "admin") router.push("/admin");
-      else router.push("/events");
+      if (user.role === "admin") {
+        router.push("/admindashboard");
+      } else {
+        router.push("/userdashboard");
+      }
     }
   }, [user, router]);
 
+  // Don't render if user is already signed in
   if (user) {
-    return null; // Will redirect
+    return null;
   }
 
   return (
@@ -49,6 +53,13 @@ export default function AuthPage() {
             <h1 className="text-4xl font-bold tracking-tight text-white">EventConnect</h1>
             <p className="mt-2 text-sm text-white/70">Create, discover and manage events effortlessly</p>
           </div>
+
+          {/* Debug Info */}
+          {process.env.NODE_ENV === 'development' && user && (
+            <div className="mb-4 p-3 bg-yellow-500 text-black rounded">
+              <strong>DEBUG:</strong> User role = {user.role}
+            </div>
+          )}
 
           {/* Auth */}
           <div>
