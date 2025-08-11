@@ -74,9 +74,9 @@ export function FirebaseSetupCheck() {
 
       setServices(results);
       
-      // Show the check if there are any errors or warnings
-      const hasIssues = results.some(s => s.status === 'error' || (s.status === 'warning' && s.required));
-      setIsVisible(hasIssues);
+      // Only show the check if there are actual errors (not warnings)
+      const hasErrors = results.some(s => s.status === 'error');
+      setIsVisible(hasErrors);
     };
 
     checkServices();

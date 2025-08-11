@@ -57,10 +57,9 @@ export default function AuthPage() {
           {/* Debug Info */}
           {process.env.NODE_ENV === 'development' && user && (
             <div className="mb-4 p-3 bg-yellow-500 text-black rounded">
-              <strong>DEBUG:</strong> User role = {user.role}
+              <strong>DEBUG:</strong> User role = {(user as any).role || 'No role'}
             </div>
           )}
-
           {/* Auth */}
           <div>
             {isLogin ? (

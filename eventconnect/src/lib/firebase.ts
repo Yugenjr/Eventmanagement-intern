@@ -18,11 +18,14 @@ const firebaseConfig = {
 // Check if Firebase is properly configured
 const isFirebaseConfigured = process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
   process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
-  process.env.NEXT_PUBLIC_FIREBASE_API_KEY !== "your-api-key-here";
+  process.env.NEXT_PUBLIC_FIREBASE_API_KEY !== "your-api-key-here" &&
+  process.env.NEXT_PUBLIC_FIREBASE_API_KEY !== "demo-api-key";
 
 if (!isFirebaseConfigured) {
   console.warn("⚠️  Firebase is not properly configured. Please update your .env.local file with your Firebase credentials.");
   console.warn("📝 Copy .env.example to .env.local and add your Firebase project credentials.");
+} else {
+  console.log("✅ Firebase is properly configured and ready to use!");
 }
 
 // Initialize Firebase
