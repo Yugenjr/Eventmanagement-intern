@@ -6,6 +6,8 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   updateProfile,
@@ -44,7 +46,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return;
     }
 
-    // Simple initialization - no interference with auth state
+    // Handle redirect results from Google sign-in
+    const handleRedirectResult = async () => {
+      if (!auth) return;
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          // Handle the redirect result similar to popup result
+          const desiredRole = localStorage.getItem("lastDesiredRole") as Role || "user";
+          localStorage.setItem('justSignedIn', 'true');
+
+          // Create/update user document
+          try {
+            const userRef = doc(db, "users", result.user.uid);
+            const userSnap = await getDoc(userRef);
+            if (!userSnap.exists()) {
+              const userData = {
+                uid: result.user.uid,
+                email: result.user.email,
+                displayName: result.user.displayName,
+                role: desiredRole,
+                photoURL: result.user.photoURL,
+                createdAt: serverTimestamp(),
+              };
+              await setDoc(userRef, userData);
+            } else if (desiredRole && userSnap.data()?.role !== desiredRole) {
+              await setDoc(userRef, { role: desiredRole }, { merge: true });
+            }
+          } catch (dbError) {
+            console.log("Database operation failed after redirect:", dbError);
+          }
+        }
+      } catch (error) {
+        console.error("Redirect result error:", error);
+      }
+    };
+
+    handleRedirectResult();
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
@@ -281,7 +319,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       } catch {}
 
-      const { user: firebaseUser } = await signInWithPopup(auth, googleProvider);
+      let firebaseUser;
+      try {
+        // Try popup first
+        const result = await signInWithPopup(auth, googleProvider);
+        firebaseUser = result.user;
+      } catch (popupError: any) {
+        if (popupError.code === 'auth/popup-blocked') {
+          // Fallback to redirect if popup is blocked
+          toast("Popup blocked. Redirecting to Google sign-in...");
+          await signInWithRedirect(auth, googleProvider);
+          return; // The redirect will handle the rest
+        }
+        throw popupError; // Re-throw other errors
+      }
 
       localStorage.setItem('justSignedIn', 'true'); // Flag for Google sign-in
 
