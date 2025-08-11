@@ -72,6 +72,21 @@ export const demoEvents: Event[] = [
 ];
 
 export const isDemoMode = () => {
-  return !process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 
-         process.env.NEXT_PUBLIC_FIREBASE_API_KEY === "your-api-key-here";
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+
+  // Debug logging in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 Demo mode check:', {
+      apiKey: apiKey ? `${apiKey.substring(0, 10)}...` : 'undefined',
+      projectId: projectId || 'undefined',
+      isDemoMode: !apiKey || apiKey === "your-api-key-here" || apiKey === "demo-api-key"
+    });
+  }
+
+  return !apiKey ||
+         apiKey === "your-api-key-here" ||
+         apiKey === "demo-api-key" ||
+         !projectId ||
+         projectId === "demo-project";
 };
